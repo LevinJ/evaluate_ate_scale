@@ -138,25 +138,9 @@ def get_groundtruthdata(ground_time, ground_data):
     res = np.concatenate((ground_time, xyz), axis = 1)
     res = res.tolist()
     res = [(float(l[0]),l[1:]) for l in res if len(l)>1]
-    return dict(res)          
+    return dict(res)   
 
-if __name__=="__main__":
-    # parse command line
-    parser = argparse.ArgumentParser(description='''
-    This script computes the absolute trajectory error from the ground truth trajectory and the estimated trajectory. 
-    ''')
-    parser.add_argument('first_file_time', help='ground truth trajectory (nx1 matrix, times.txt)')
-    parser.add_argument('first_file_data', help='ground truth trajectory (3x4 transformation matrix)')
-    parser.add_argument('second_file', help='estimated trajectory (format: timestamp tx ty tz qx qy qz qw)')
-    parser.add_argument('--offset', help='time offset added to the timestamps of the second file (default: 0.0)',default=0.0)
-    parser.add_argument('--scale', help='scaling factor for the second trajectory (default: 1.0)',default=1.0)
-    parser.add_argument('--max_difference', help='maximally allowed time difference for matching entries (default: 0.02)',default=0.02)
-    parser.add_argument('--save', help='save aligned second trajectory to disk (format: stamp2 x2 y2 z2)')
-    parser.add_argument('--save_associations', help='save associated first and aligned second trajectory to disk (format: stamp1 x1 y1 z1 stamp2 x2 y2 z2)')
-    parser.add_argument('--plot', help='plot the first and the aligned second trajectory to an image (format: png)')
-    parser.add_argument('--verbose', help='print all evaluation data (otherwise, only the RMSE absolute translational error in meters after alignment will be printed)', action='store_true')
-    args = parser.parse_args()
-
+def exec_main(args):
     first_list = get_groundtruthdata(args.first_file_time,args.first_file_data)
 #     first_list = associate.read_file_list(args.first_file)
     second_list = associate.read_file_list(args.second_file)
@@ -169,6 +153,8 @@ if __name__=="__main__":
     first_xyz = numpy.matrix([[float(value) for value in first_list[a][0:3]] for a,b in matches]).transpose()
     second_xyz = numpy.matrix([[float(value)*float(args.scale) for value in second_list[b][0:3]] for a,b in matches]).transpose()
     rot,trans,trans_error,scale = align(second_xyz,first_xyz)
+    print("rot={}, \ntrans={}".format(rot, trans))
+    print(trans_error)
     
     second_xyz_aligned = scale * rot * second_xyz + trans
     
@@ -225,4 +211,24 @@ if __name__=="__main__":
         ax.set_ylabel('y [m]')
 #         plt.savefig(args.plot,dpi=90)
         plt.show()
+    return       
+
+if __name__=="__main__":
+    # parse command line
+    parser = argparse.ArgumentParser(description='''
+    This script computes the absolute trajectory error from the ground truth trajectory and the estimated trajectory. 
+    ''')
+    parser.add_argument('first_file_time', help='ground truth trajectory (nx1 matrix, times.txt)')
+    parser.add_argument('first_file_data', help='ground truth trajectory (3x4 transformation matrix)')
+    parser.add_argument('second_file', help='estimated trajectory (format: timestamp tx ty tz qx qy qz qw)')
+    parser.add_argument('--offset', help='time offset added to the timestamps of the second file (default: 0.0)',default=0.0)
+    parser.add_argument('--scale', help='scaling factor for the second trajectory (default: 1.0)',default=1.0)
+    parser.add_argument('--max_difference', help='maximally allowed time difference for matching entries (default: 0.02)',default=0.02)
+    parser.add_argument('--save', help='save aligned second trajectory to disk (format: stamp2 x2 y2 z2)')
+    parser.add_argument('--save_associations', help='save associated first and aligned second trajectory to disk (format: stamp1 x1 y1 z1 stamp2 x2 y2 z2)')
+    parser.add_argument('--plot', help='plot the first and the aligned second trajectory to an image (format: png)')
+    parser.add_argument('--verbose', help='print all evaluation data (otherwise, only the RMSE absolute translational error in meters after alignment will be printed)', action='store_true')
+    args = parser.parse_args()
+
+    exec_main(args)
         
